@@ -55,7 +55,7 @@ if not found_camera:
     print("❌ Error: Could not find DroidCam.")
     exit()
 
-print("✅ SYSTEM READY! (Erosion + Strict Mode Active)")
+print(" (Erosion + Strict Mode Active)")
 
 while True:
     success, frame = cap.read()
@@ -80,15 +80,15 @@ while True:
             h = y2 - y1
             area = w * h
 
-            # --- FILTER 1: SIZE CHECK ---
+            
             if area < min_grain_area or area > max_grain_area:
                 continue
 
-            # Get Label
+            
             class_id = int(box.cls[0])
             label_name = model.names[class_id]
 
-            # Logic: If it touches, counting might fail, but we save stats.
+     
             if "sound" in label_name:
                 whole_rice += 1
             elif "broken" in label_name:
@@ -96,22 +96,22 @@ while True:
             elif "foreign" in label_name:
                 foreign_obj += 1
 
-            # --- SMART GEOMETRY ANALYSIS (The Erosion Fix) ---
+            
             if "foreign" not in label_name:
                 # 1. Cut out the grain image
                 roi = frame[y1:y2, x1:x2]
                 if roi.size == 0: continue
 
-                # 2. Convert to Binary (Black & White)
+                
                 gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
                 _, mask = cv2.threshold(gray_roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
                 
-                # 3. EROSION (Digital Sandpaper)
+                
                 # This shrinks the grain slightly to break connections with neighbors
                 kernel = np.ones((3,3), np.uint8)
                 eroded_mask = cv2.erode(mask, kernel, iterations=1)
 
-                # 4. Find the shape inside the eroded mask
+                
                 contours, _ = cv2.findContours(eroded_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 
                 if contours:
@@ -124,7 +124,7 @@ while True:
                     length_px = max(w_rect, h_rect)
                     grain_lengths_px.append(length_px)
 
-            # Draw Box
+            
             color = (0, 255, 0) # Green default
             if "broken" in label_name or "foreign" in label_name:
                 color = (0, 0, 255) # Red
@@ -132,30 +132,30 @@ while True:
             cv2.rectangle(final_frame, (x1, y1), (x2, y2), color, 2)
             cv2.putText(final_frame, label_name, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-    # 3. CALCULATE AVERAGE SIZE
+    
     avg_length_mm = 0.0
     if len(grain_lengths_px) > 0:
         avg_px = sum(grain_lengths_px) / len(grain_lengths_px)
         avg_length_mm = round(avg_px / pixels_per_mm, 2)
 
-    # 4. DASHBOARD
+    
     total_rice = whole_rice + broken_rice
     quality_score = 0
     if total_rice > 0:
         quality_score = int((whole_rice / total_rice) * 100)
 
-    # Overlay Box
+
     overlay = final_frame.copy()
     cv2.rectangle(overlay, (5, 5), (280, 200), (0, 0, 0), -1) 
     
-    # Red Alert
+    
     if foreign_obj > 0:
         cv2.rectangle(overlay, (5, 5), (280, 200), (0, 0, 255), -1)
         cv2.putText(final_frame, "CONTAMINATION!", (300, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
 
     final_frame = cv2.addWeighted(overlay, 0.6, final_frame, 0.4, 0)
     
-    # Stats Text
+    
     font = cv2.FONT_HERSHEY_SIMPLEX
     cv2.putText(final_frame, f"TOTAL:  {total_rice}", (15, 35), font, 0.8, (255, 255, 255), 2)
     cv2.putText(final_frame, f"Whole:  {whole_rice}", (15, 70), font, 0.6, (0, 255, 0), 2)
@@ -165,7 +165,7 @@ while True:
 
     cv2.imshow("Rice Quality Inspector (Pro)", final_frame)
 
-    # 5. CONTROLS
+    
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'): break
     elif key == ord('s'):
@@ -181,4 +181,5 @@ while True:
         cv2.waitKey(100)
 
 cap.release()
+
 cv2.destroyAllWindows()
