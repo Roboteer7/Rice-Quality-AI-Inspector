@@ -5,21 +5,16 @@ import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
 
-# --- CONFIGURATION ---
+
 model_path = 'best.pt'
-
-# 1. STRICTER THRESHOLD (Fixes "Ghost" detections)
 conf_threshold = 0.55 
-
-# 2. PIXEL-TO-MM CALIBRATION 
-# Updated to 4.0 based on your "1.45mm" error. This should be closer to reality.
 pixels_per_mm = 4.0  
 
-# 3. SIZE FILTERS
+#SIZE FILTERS[wrna viv quality error]
 min_grain_area = 100 
 max_grain_area = 5000 
 
-# CSV SETUP
+#CSV SETUP
 csv_file = "Rice_Quality_Report.csv"
 if not os.path.exists(csv_file):
     with open(csv_file, mode='w', newline='') as file:
@@ -34,7 +29,6 @@ except Exception as e:
     print(f"❌ Error loading model: {e}")
     exit()
 
-# CAMERA AUTO-SEARCH
 found_camera = False
 cap = None
 for index in [1, 2, 3]:
@@ -143,19 +137,15 @@ while True:
     quality_score = 0
     if total_rice > 0:
         quality_score = int((whole_rice / total_rice) * 100)
-
-
+        
     overlay = final_frame.copy()
     cv2.rectangle(overlay, (5, 5), (280, 200), (0, 0, 0), -1) 
-    
     
     if foreign_obj > 0:
         cv2.rectangle(overlay, (5, 5), (280, 200), (0, 0, 255), -1)
         cv2.putText(final_frame, "CONTAMINATION!", (300, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
 
     final_frame = cv2.addWeighted(overlay, 0.6, final_frame, 0.4, 0)
-    
-    
     font = cv2.FONT_HERSHEY_SIMPLEX
     cv2.putText(final_frame, f"TOTAL:  {total_rice}", (15, 35), font, 0.8, (255, 255, 255), 2)
     cv2.putText(final_frame, f"Whole:  {whole_rice}", (15, 70), font, 0.6, (0, 255, 0), 2)
@@ -183,3 +173,4 @@ while True:
 cap.release()
 
 cv2.destroyAllWindows()
+
